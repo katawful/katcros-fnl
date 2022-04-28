@@ -1,31 +1,17 @@
-; convert to string)
-(fn sym-tostring [x]
-  `,(tostring x))
+;;; Macros to convert Lua constructs to something more Lisp-y
 
-; plugin initialization
-; for packer.nvim
-(fn plugInit [...]
-  `(do
-     ((. (require :packer) :startup) (fn []
-                                      (do
-                                        ,...)))))
 
-; i find "Plug" to be more semantically ideal
-(fn Plug [plugin]
-    `(use ,plugin))
-
-; require configs
-; lua options really, i find the table lookup syntax to be garbage
-(fn opt- [tableOrigin lookupValue ...]
-  (let [tableOrigin tableOrigin
-        lookupValue lookupValue
-        output [...]]
+;; Macro -- table lookup
+;; @origin -- table to search
+;; @lookup -- lookup value
+;; @... -- list to do on the lookupped value
+(fn opt- [origin lookup ...]
+  "Macro -- Lookup a value in a table, and do"
+  (let [output [...]]
        `(do
-          ((. (require ,tableOrigin) ,lookupValue)
+          ((. (require ,origin) ,lookup)
            ,...))))
 
 {
- :Plug Plug
- :plugInit plugInit
  :opt- opt-}
 
