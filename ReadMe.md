@@ -8,19 +8,19 @@ This is a collection of macros intended to the functionality of various Neovim r
 These macros deal with interfacing with Neovim directly. They are split up accordingly
 
 ### maps
-Handles key maps, attempts to mimic the simplicity of Vimscript's syntax. These all function similarly. There are 4 ways for a map macro to expand to depending on the arguments used. A left-hand-side and right-hand-side argument are always needed, but a description and options table is optional, with the options table always being last.
+Handles key maps, attempts to mimic the simplicity of Vimscript's syntax. These all function similarly. A left-hand-side and right-hand-side argument are always needed, but a description and options table is optional, with the options table always being last.
 
 #### Syntax
 ```fennel
 ; options table, no description
-(map-macro lhs rhs {opts value})
+(map-macro lhs rhs {:buffer true})
 ; expansion
-(vim.keymap.set :mode lhs rhs {opts value})
+(vim.keymap.set :mode lhs rhs {:buffer true})
 
 ; description and options table
-(map-macro lhs rhs "Map description" {opts value})
+(map-macro lhs rhs "Map description" {:buffer true})
 ; expansion
-(vim.keymap.set :mode lhs rhs {opts value :desc "Map description"})
+(vim.keymap.set :mode lhs rhs {:buffer true :desc "Map description"})
 
 ; description, no options table
 (map-macro lhs rhs "Map description")
@@ -70,13 +70,235 @@ Note that the mode is not explicitly set by an argument. This is to mimic Vimscr
 
 ; expanded forms
 (vim.keymap.set [:n :v] ";" ":" {:desc "Swap char search and command-line enter"})
-(vim.keymap.set [:n :v] ":" ";" {:desc "Swap command-line enter and char search "})
+(vim.keymap.set [:n :v] ":" ";" {:desc "Swap command-line enter and char search"})
 
 (vim.keymap.set :n :<leader>r :<C-l> {:desc "Return <C-l> functionality"})
 
 (fn files [opts]
   ((. (require :fzf-lua) :files) opts))
 (vim.keymap.set :n :<leader>f (fn [] (files)) {:silent true :desc "Open FZF file window"})
+```
+
+### utils
+Handles various utilities that aren't associated with any specific grouping
+
+#### `command-`
+Creates a user command. Like the map macros, can take optional description and options table.
+
+##### Syntax
+```fennel
+; no description or options table
+(command- name command)
+; expansion
+(vim.api.nvim_create_user_command name command)
+
+; description, no options table
+(command- name command "Command description")
+; expansion
+(vim.api.nvim_create_user_command name command {:desc "Command description"})
+
+; description and options table
+(command- name command "Command description" {:nargs 1})
+; expansion
+(vim.api.nvim_create_user_command name command {:nargs 1 :desc "Command description"})
+
+; no description, options table
+(command- name command {:nargs 1})
+; expansion
+(vim.api.nvim_create_user_command name command {:nargs 1})
+```
+
+##### Examples
+```fennel
+; macro form
+(fn files [opts]
+  ((. (require :fzf-lua) :files) opts))
+(command- :FZFOpenFile (fn [] (files)) "Open files")
+
+; expansion
+(fn files [opts]
+  ((. (require :fzf-lua) :files) opts))
+(vim.api.nvim_create_user_command :FZFOpenFile (fn [] (files)) {:desc "Open files"})
+```
+
+#### `com-`
+Run Ex commands a bit more list like. Mostly a convenience macro, does not offer any special functionality.
+
+##### Syntax
+```fennel
+(com- function arg-string)
+; expansion
+(vim.api.nvim_command "function arg-string")
+```
+
+### colors
+Handles color management.
+
+#### `col-`
+Set a colorscheme.
+
+##### Syntax
+```fennel
+(col- "kat.nvim")
+; expansion
+(vim.cmd "colorscheme kat.nvim")
+```
+
+### options
+Handles setting of options and scoped variables.
+
+#### `set-` and Friends
+The macros that contain `set` all have the same macro signature, and are designed to set internal Neovim options (such as 'indentexpr'). They contain the same limitations as the appropriate Lua tables (e.g. `vim.o`), they still evaluate to Vimscript. If a Lua/Fenel function is to be used, it must be passed as you were with Vimscript still. This is a limitation to be improved upon.
+
+##### Syntax
+```fennel
+(set- option value)
+```
+`option` is always evaluated to a string, it does not need to be a string itself. `value` must always be passed, even for options being set to true. This is for clarity of use, and functionality.
+
+##### Set Macros List
+
+| Macro | Use | Expanded Function |
+| ----- | --- | ----------------- |
+|`set-` | Attempts to match option | `nvim_set_option`, `nvim_win_set_option`, `nvim_buf_set_option`|
+|`setl-` | Set local option | `vim.opt_local` |
+|`setg-` | Set global option | `vim.opt_global` |
+|`setw-` | Set window option | `nvim_win_set_option` |
+|`seta-` | Append a value to option | `(tset vim.opt option (+ vim.opt.option value))` |
+|`setp-` | Prepend a value to option | `(tset vim.opt option (^ vim.opt.option value))` |
+|`setr-` | Remove a value from option | `(tset vim.opt option (- vim.opt.option value))` |
+
+##### Examples
+```fennel
+; macro forms
+(set- mouse "a")
+(set- number true)
+(set- hidden false)
+(setl- expandtab true)
+(seta- clipboard "unnamedplus")
+(setr- nrformats :octal)
+
+; expansion
+(vim.api.nvim_set_option "mouse" "a")
+(vim.api.nvim_win_set_option 0 "number" true)
+(vim.api.nvim_set_option "hidden" false)
+(tset vim.opt_local "expandtab" true)
+(tset vim.opt "clipboard" (+ (. vim.opt "clipboard") "unnamedplus"))
+(tset vim.opt "nrformats" (- (. vim.opt "nrformats") "octal"))
+```
+
+#### `let-`
+This sets scoped variables.
+
+##### Syntax
+```fennel
+(let- :scope :variable value)
+; expansion
+(tset vim.scope :variable value)
+```
+
+The scope can be any valid variable table: `g`, `b`, `w`, `t`, `v`, or `env`
+
+### autocommands
+Handles dealing with autocommands and autogroups.
+
+#### `def-aug-`
+Defines an autogroup to be returned for a variable.
+
+##### Syntax
+```fennel
+(local augroup (def-aug- "GroupName" true))
+; expansion
+(local augroup (vim.api.nvim_create_augroup "GroupName" {:clear false}))
+```
+The boolean is optional. It inverts the functionality of `nvim_create_augroup`. If set to false or nil (i.e. no argument after the name), then the default behavior of `nvim_create_augroup` will be used. This means augroups will clear upon each call.
+
+#### `auc-`
+Creates an autocommand. It is not designed to be accepted by a variable for manipulation. Like maps and user command macros, it can take an optional description and options table. The events, pattern, and callback are required.
+
+##### Syntax
+```fennel
+; no description or options table, lua callback
+(auc- :Event "*.file" (fn [] (print "callback")))
+; expansion
+(vim.api.nvim_create_autocmd :Event {:pattern "*.file" :callback (fn [] (print "callback"))})
+
+; description, no options table, vimscript callback
+(auc- :Event "*.file" "echo 'command'" "Autocmd description")
+; expansion
+(vim.api.nvim_create_autocmd :Event {:pattern "*.file" :command "echo 'command'" :desc "Autocmd description"})
+
+; no description, options table, called lua callback
+(fn [] auto-callback (print "called function"))
+(auc- :Event "*.file" auto-callback {:buffer 0})
+; expansion
+(vim.api.nvim_create_autocmd :Event {:pattern "*.file" :callback auto-callback :buffer 0})
+
+; description and options table, called lua callback
+(fn [] auto-callback (print "called function"))
+(auc- :Event "*.file" auto-callback "Autocmd description" {:buffer 0})
+; expansion
+(vim.api.nvim_create_autocmd :Event {:pattern "*.file" :callback auto-callback :desc "Autocmd description" :buffer 0})
+```
+
+#### `aug-`
+Absorbs `auc-` calls within its list, and injects the group throughout each. Only accepts `auc-` after the group variable.
+
+##### Syntax
+```fennel
+(aug- group
+  (auc- :Event "*" (fn [] (print "callback"))))
+; expansion minus auc-
+(auc- :Event "*" (fn [] (print "callback")) {:group group})
+; full expansion
+(vim.api.nvim_create_autocmd :Event {:pattern "*" :callback (fn [] (print "callback")) :group group})
+```
+
+The group must have been previously defined, it cannot be passed through with this macro. For additional notice, only `auc-` calls are accepted. Attempting to use anything else will result in a compile-time error. This is *not* a way to be programmatic about autocommand creation, it is only equivalent to the `->` threading macros in function. Any programmatic work of autocommands must be done in a list outside of this scope.
+
+#### Examples
+```fennel
+; macro form
+(let [highlight (def-aug- "highlightOnYank")]
+  (aug- highlight
+        (auc- "TextYankPost" :* 
+              (fn [] ((. (require :vim.highlight) :on_yank)))
+              "Highlight yank region")))
+(let [terminal (def-aug- "terminalSettings")]
+  (aug- terminal
+   (auc- "TermOpen" :* (fn [] (setl- number false)) "No number")
+   (auc- "TermOpen" :* (fn [] (setl- relativenumber false)) "No relative number")
+   (auc- "TermOpen" :* (fn [] (setl- spell false)) "No spell")
+   (auc- "TermOpen" :* (fn [] (setl- bufhidden :hide)) "Bufhidden")))
+
+; expansion
+(let [highlight (vim.api.nvim_create_augroup "highlightOnYank" {:clear true})]
+  (vim.api.nvim_create_autocmd "TextYankPost"
+                               {:pattern :*
+			        :callback (fn [] ((. (require :vim.highlight) :on_yank)))
+				:desc "Highlight yank region"
+				:group highlight}))
+(let [terminal (vim.api.nvim_create_augroup "terminalSettings" {:clear true})]
+  (vim.api.nvim_create_autocmd "TermOpen" 
+                               {:pattern :* 
+			        :callback (fn [] (setl- number false))
+				:group terminal
+				:desc "No number"})
+  (vim.api.nvim_create_autocmd "TermOpen" 
+                               {:pattern :* 
+			        :callback (fn [] (setl- relativenumber false)) 
+				:group terminal
+				:desc "No relative number"})
+  (vim.api.nvim_create_autocmd "TermOpen" 
+                               {:pattern :* 
+			        :callback (fn [] (setl- spell false)) 
+				:group terminal
+				:desc "No spell"})
+  (vim.api.nvim_create_autocmd "TermOpen" 
+                               {:pattern :* 
+			        :callback (fn [] (setl- bufhidden :hide)) 
+				:group terminal
+				:desc "Bufhidden"})))
 ```
 
 # Usage
