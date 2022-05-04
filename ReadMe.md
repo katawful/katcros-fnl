@@ -39,8 +39,7 @@ The macros will inject themselves into your plugin repo under `deps/` like anise
 The path for this method is: `your-plugin.katcros-fnl.macro-path`.
 
 ## This Repo as a Neovim Package
-Currently there I don't have a clean way to integrate a git subtree for this repo in a manner like Aniseed.
-If using these, say for Neovim configs or a standalone Fennel project (through Hotpot or Tangerine), simply add this repo to your package manager.
+If using these macros, say for Neovim configs or a standalone Fennel project (through Hotpot or Tangerine), simply add this repo to your package manager.
 This will allow access to these macros globally without requiring integration into your project directly.
 This method is not suggested for plugins as macros can become out of sync, whereas a git subtree only updates whenever the plugin is updated by you.
 
