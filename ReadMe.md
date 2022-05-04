@@ -84,7 +84,7 @@ These macros are primarily meant for Neovim, but can be used for anything if nee
 
 ## Using with Aniseed Directly
 
-[https://github.com/Olical/aniseed](Aniseed)
+[Aniseed](https://github.com/Olical/aniseed)
 
 If making Aniseed plugins, git subtree management is handled mostly fine for you already. See an example Makefile below:
 ```makefile
@@ -108,7 +108,7 @@ test:
 	rm -rf test/lua
 	deps/aniseed/scripts/test.sh
 ```
-Note that `compile.sh` is now moved below `embed.sh`. This is not the default behavior. If you use the default assumption, Aniseed will be unable to compile with the loaded macros despite [https://github.com/Olical/conjure](Conjure) working. The macros will inject themselves into your plugin repo under `deps/` like aniseed.
+Note that `compile.sh` is now moved below `embed.sh`. This is not the default behavior. If you use the default assumption, Aniseed will be unable to compile with the loaded macros despite [Conjure](https://github.com/Olical/conjure) working. The macros will inject themselves into your plugin repo under `deps/` like aniseed.
 
 The path for this method is: `your-plugin.katcros-fnl.macro-path`.
 
