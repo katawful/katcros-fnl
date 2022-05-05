@@ -1,12 +1,6 @@
 ;;; Macro file for option management
 
 ;; Private macros
-;; Macro -- shorthand for vim.cmd
-(fn cmd [string]
-  `(vim.cmd ,string))
-;; Macro -- shorthand for tostring
-(fn sym-tostring [x]
-  `,(tostring x))
 ;; Macro -- get the scope of an option
 (fn get-scope [opt]
   "Macro -- get the scope of an option"
@@ -24,25 +18,25 @@
 ;; Macro -- set a global option
 (fn setg- [option value]
   "Macro -- set a global option"
-  (let [option (sym-tostring option)]
+  (let [option (tostring option)]
     `(tset vim.opt_global ,option ,value)))
 
 ;; Macro -- set a local option
 (fn setl- [option value]
   "Macro -- set a local option"
-  (let [option (sym-tostring option)]
+  (let [option (tostring option)]
     `(tset vim.opt_local ,option ,value)))
 
 ;; Macro -- set a window option
 (fn setw- [option value]
   "Macro -- set a window option"
-  (let [option (sym-tostring option)]
+  (let [option (tostring option)]
     (set-option option value :win)))
 
 ;; Macro -- set an option generically if possible
 (fn set- [option value]
   "Macro -- set an option generically if possible"
-  (let [option (sym-tostring option)
+  (let [option (tostring option)
         value value
         scope# (get-scope option)]
     (set-option option value scope#)))
@@ -50,19 +44,19 @@
 ;; Macro -- append a value to an option
 (fn seta- [option value]
   "Macro -- append a value to an option"
-  (let [option  (sym-tostring option)]
+  (let [option  (tostring option)]
     `(tset vim.opt ,option (+ (. vim.opt ,option) ,value))))
 
 ;; Macro -- prepend a value to an option
 (fn setp- [option value]
   "Macro -- prepend a value to an option"
-  (let [option (sym-tostring option)]
+  (let [option (tostring option)]
     `(tset vim.opt ,option (^ (. vim.opt ,option) ,value))))
 
 ;; Macro -- remove a value from an option
 (fn setr- [option value]
   "Macro -- remove a value from an option"
-  (let [option (sym-tostring option)]
+  (let [option (tostring option)]
     `(tset vim.opt ,option (- (. vim.opt ,option) ,value))))
 
 ;; Macro -- set a variable of some scope
@@ -71,8 +65,8 @@
 ;; @... -- the options
 (fn let- [scope obj ...]
   "Macro -- set a variable of some scope"
-  (let [scope (sym-tostring scope)
-        obj (sym-tostring obj)
+  (let [scope (tostring scope)
+        obj (tostring obj)
         output [...]
         value []]
     (var value "")

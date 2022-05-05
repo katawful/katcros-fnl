@@ -1,13 +1,5 @@
 ;;; Macro file for key maps
 
-;; Private macros
-;; Macro -- shorthand for vim.cmd
-(fn cmd [string]
-  `(vim.cmd ,string))
-;; Macro -- shorthand for tostring
-(fn sym-tostring [x]
-  `,(tostring x))
-
 ;; Macro -- create a normal mode map
 ;; Has 3 outputs
 ;; 1 -- No description, but opts table

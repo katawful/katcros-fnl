@@ -1,30 +1,22 @@
 ;;; Macros for Neovim utilities
 
-;; Private macros
-;; Macro -- shorthand for vim.cmd
-(fn cmd [string]
-  `(vim.cmd ,string))
-;; Macro -- shorthand for tostring
-(fn sym-tostring [x]
-  `,(tostring x))
-
 ;; Macro -- call Ex/user commands a bit more cleanly
 ;; @function -- the function demanded
 ;; @... -- string for arguments
 (fn com- [function ...]
   "Macro -- call Ex/user commands a bit more cleanly"
-  (let [function (sym-tostring function)
+  (let [function (tostring function)
         args [...]]
     (var output function)
     (each [k v (pairs args)]
-      (set output (.. output " " (sym-tostring v))))
+      (set output (.. output " " (tostring v))))
     `(vim.api.nvim_command ,output)))
 
 ;; Macro -- create a user command
 ;; Has 3 outputs
 ;; 1 -- No description, but opts table
 ;; 2 -- Description and optional opts table
-;; 3 -- Just lhs and rhs
+;; 3 -- Just name and command
 ;; @name -- name for user command, should start with a capital
 ;; @command -- whatever fennel function desired
 ;; @desc -- description, or opts table if no description

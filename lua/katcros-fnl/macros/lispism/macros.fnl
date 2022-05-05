@@ -1,6 +1,5 @@
 ;;; Macros to convert Lua constructs to something more Lisp-y
 
-
 ;; Macro -- table lookup
 ;; @origin -- table to search
 ;; @lookup -- lookup value

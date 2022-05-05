@@ -1,13 +1,5 @@
 ;;; Macro file for autocommands
 
-;; Private macros
-;; Macro -- shorthand for vim.cmd
-(fn cmd [string]
-  `(vim.cmd ,string))
-;; Macro -- shorthand for tostring
-(fn sym-tostring [x]
-  `,(tostring x))
-
 ;; Macro -- create an augroup to return as a variable
 ;; @name -- name of group
 ;; @no-clear -- if true, don't clear out group. opposite of default
