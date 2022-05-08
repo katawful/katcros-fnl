@@ -68,7 +68,6 @@
     `,out#))
 
 {
- :cmd cmd
  :aug- aug-
  :auc- auc-
  :def-aug- def-aug-}
