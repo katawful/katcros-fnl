@@ -301,6 +301,49 @@ The group must have been previously defined, it cannot be passed through with th
 				:desc "Bufhidden"})))
 ```
 
+## nvim.packer
+These macros modify some usage for packer.nvim, mostly for my own preferences.
+
+### `plugInit`
+Condenses the standard packer setup into a one line call, does not support configuring packer.nvim in the same call at the moment.
+
+#### Syntax
+```fennel
+(plugInit
+  (use :wbthomason/packer.nvim)
+  (use :Olical/aniseed)
+  (use :lewis6991/impatient.nvim))
+; expansion
+((. (require :packer) :startup)
+  (fn []
+    (do
+      (use :wbthomason/packer.nvim)
+      (use :Olical/aniseed)
+      (use :lewis6991/impatient.nvim))))
+```
+
+### `Plug`
+Compiles to `use`. No other use than an alias.
+
+## lispism
+These macros are attempts at adapting forms to something a bit more Lisp-like, since Fennel compiles to Lua.
+
+### `opt-`
+Replaces the standard table value lookup.
+
+#### Syntax
+```fennel
+; with a passed value
+(opt- origin lookup {:value true})
+; expansion
+((. (require origin) lookup {:value true}))
+
+; without a passed value
+(opt- origin lookup)
+; expansion
+((. (require origin) lookup))
+```
+
 # Usage
 These macros are primarily meant for Neovim, but can be used for anything if needed.
 
