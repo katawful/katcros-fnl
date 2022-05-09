@@ -61,7 +61,7 @@
                  (set output# (.. output# "-range "))
                  (set output# (.. output# "-range=" (tostring v) " "))))
       :addr (set output# (.. output# "-nargs=" (tostring v)))))
-  (set output# (.. output# name vimscript))
+  (set output# (.. output# name " " vimscript))
   `(do
      (vim.api.nvim_command ,output#)))
 
