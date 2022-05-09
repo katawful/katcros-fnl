@@ -44,29 +44,26 @@
 ;; @attributes -- a table of user command attributes
 ;; @vimscript -- whatever vimscript one is running
 (fn command*-vim [name attributes vimscript]
-  (let [name (.. (sym-tostring name) " ")
-        attributes attributes
-        vimscript vimscript]
-    ; TODO - think about having bang be optional
-    (var output "command! ")
-    ; parse each value in the attribute table
-    ; most are just true/false values so they don't need an argument
-    (each [k v (pairs attributes)]
-      (match k
-        :buffer (set output (.. output "-buffer "))
-        :bang (set output (.. output "-bang "))
-        :bar (set output (.. output "-bar "))
-        :register (set output (.. output "-register "))
-        :complete (set output (.. output "-complete=" (sym-tostring v) " "))
-        :nargs (set output (.. output "-nargs=" (sym-tostring v) " "))
-        :range (do
-                 (if (= v true)
-                   (set output (.. output "-range "))
-                   (set output (.. output "-range=" (sym-tostring v) " "))))
-        :addr (set output (.. output "-nargs=" (sym-tostring v)))))
-    (set output (.. output name vimscript))
-    `(do
-       (vim.api.nvim_command ,output))))
+   ; TODO - think about having bang be optional
+  (var output# "command! ")
+  ; parse each value in the attribute table
+  ; most are just true/false values so they don't need an argument
+  (each [k v (pairs attributes)]
+    (match k
+      :buffer (set output# (.. output "-buffer "))
+      :bang (set output# (.. output "-bang "))
+      :bar (set output# (.. output "-bar "))
+      :register (set output# (.. output "-register "))
+      :complete (set output# (.. output "-complete=" (tostring v) " "))
+      :nargs (set output# (.. output "-nargs=" (tostring v) " "))
+      :range (do
+               (if (= v true)
+                 (set output# (.. output "-range "))
+                 (set output# (.. output "-range=" (tostring v) " "))))
+      :addr (set output# (.. output "-nargs=" (tostring v)))))
+  (set output# (.. output name vimscript))
+  `(do
+     (vim.api.nvim_command ,output#)))
 
 {
  :com- com-
