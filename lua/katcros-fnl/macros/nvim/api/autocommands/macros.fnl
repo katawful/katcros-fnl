@@ -36,21 +36,24 @@
     (if (= (type desc) :table)
       (do
         (tset desc call-type# callback)
-        (tset desc :pattern pattern)
+        (if (not= pattern nil)
+          (tset desc :pattern pattern))
         `(vim.api.nvim_create_autocmd ,events ,desc))
       ; if a desc string, add them all to the opts table
       (= (type desc) :string)
       (do
         (tset opts# :desc desc)
         (tset opts# call-type# callback)
-        (tset opts# :pattern pattern)
+        (if (not= pattern nil)
+          (tset opts# :pattern pattern))
         (if (not= args nil)
           (each [key val (pairs args)]
             (tset opts# key val)))
         `(vim.api.nvim_create_autocmd ,events ,opts#))
       ; no additional options or description
       (do
-        (tset opts# :pattern pattern)
+        (if (not= pattern nil)
+          (tset opts# :pattern pattern))
         (tset opts# call-type# callback)
         `(vim.api.nvim_create_autocmd ,events ,opts#)))))
 
