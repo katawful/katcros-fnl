@@ -42,7 +42,9 @@
     (if (= (type desc) :table)
       ; no description but opts table
       (do
-        `(vim.api.nvim_create_user_command ,name ,command ,desc))
+        (if desc.buffer
+          `(vim.api.nvim_buf_create_user_command ,name ,command ,desc)
+          `(vim.api.nvim_create_user_command ,name ,command ,desc)))
       (= (type desc) :string)
       ; descriptin and optional opts table
       (do
@@ -50,7 +52,9 @@
         (if (not= args nil)
           (each [key val (pairs args)]
             (tset opts# key val)))
-        `(vim.api.nvim_create_user_command ,name ,command ,opts#))
+        (if opts#.buffer
+          `(vim.api.nvim_buf_create_user_command ,name ,command ,opts#)
+          `(vim.api.nvim_create_user_command ,name ,command ,opts#)))
       ; no additional options or description
       (do
         `(vim.api.nvim_create_user_command ,name ,command ,opts#)))))
