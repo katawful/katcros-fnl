@@ -14,6 +14,8 @@
 ;;; You should have received a copy of the GNU General Public License
 ;;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+(local a (require :aniseed.core))
+
 ;;; Macro file for autocommands
 
 ;; Macro -- create an augroup to return as a variable
@@ -86,8 +88,101 @@
           (table.insert out# val#))))
     `,out#))
 
+;; Macro -- clear out autocmds based on multiple queries
+(fn cle-auc! [tbl] "Macro -- clear autocommands"
+  (assert-compile (a.table? tbl)
+                  (.. "Expected table, got " (type tbl)) tbl)
+  `(vim.api.nvim_clear_autocmds ,tbl))
+
+;; Macro -- clear autocmd by event
+(fn cle-auc<-event! [events] "Macro -- clear autocommands from events"
+  (assert-compile (or (a.string? events)
+                      (a.table? events))
+                  (.. "Expected table or string, got " (type events)) events)
+  `(vim.api.nvim_clear_autocmds {:event ,events}))
+
+;; Macro -- clear autocmd by pattern
+(fn cle-auc<-pattern! [patterns] "Macro -- clear autocommands from patterns"
+  (assert-compile (or (a.string? patterns)
+                      (a.table? patterns))
+                  (.. "Expected table or string, got " (type patterns)) patterns)
+  `(vim.api.nvim_clear_autocmds {:pattern ,patterns}))
+
+;; Macro -- clear autocmd by buffer
+(fn cle-auc<-buffer! [buffers] "Macro -- clear autocommands from buffers"
+  (assert-compile (or buffers (a.odd? buffers) (a.even? buffers))
+                  (.. "Expected boolean or number, got " (type buffers)) buffers)
+  (let [buffer# (if (= buffers true)
+                  0
+                  buffers)]
+    `(vim.api.nvim_clear_autocmds {:buffer ,buffer#})))
+
+;; Macro -- clear autocmd by group
+(fn cle-auc<-group! [groups] "Macro -- clear autocommands from group"
+  (assert-compile (or (a.string? groups)
+                      (a.odd? groups)
+                      (a.even? groups))
+                  (.. "Expected string or number, got " (type groups)) groups)
+  `(vim.api.nvim_clear_autocmds {:group ,groups}))
+
+;; Macro -- delete autogroup
+(fn del-aug! [id] "Macro -- delete augroup by id or name"
+  (assert-compile (or (a.string? id) (a.odd? id) (a.even? id))
+                  (.. "Expected string or number, got " (type id)) id)
+  (if (a.string? id)
+    `(vim.api.nvim_del_augroup_by_name ,id)
+    `(vim.api.nvim_del_augroup_by_id ,id)))
+
+;; Macro -- autocommand to table
+(fn get-auc [tbl] "Macro -- get autocommands"
+  (assert-compile (a.table? tbl)
+                  (.. "Expected table, got " (type tbl)) tbl)
+  `(vim.api.nvim_get_autocmds ,tbl))
+
+(fn get-auc<-group [groups] "Macro -- get autocommand from group"
+  (assert-compile (or (a.string? groups)
+                      (a.odd? groups)
+                      (a.even? groups))
+                  (.. "Expected string or number, got " (type groups)) groups)
+  `(vim.api.nvim_get_autocmds {:group ,groups}))
+
+(fn get-auc<-pattern [patterns] "Macro -- get autocommands from patterns"
+  (assert-compile (or (a.string? patterns)
+                      (a.table? patterns))
+                  (.. "Expected table or string, got " (type patterns)) patterns)
+  `(vim.api.nvim_get_autocmds {:pattern ,patterns}))
+
+(fn get-auc<-event [events] "Macro -- get autocommands from events"
+  (assert-compile (or (a.string? events)
+                      (a.table? events))
+                  (.. "Expected table or string, got " (type events)) events)
+  `(vim.api.nvim_get_autocmds {:event ,events}))
+
+(fn do-auc [events ?opts] "Macro -- do autocommand"
+  (assert-compile (or (a.table? events)
+                      (a.string? events))
+                  (.. "Expected table or string for arg #1, got " (type events))
+                  events)
+  (let [opts (if (= ?opts nil)
+               {}
+               ?opts)]
+    (assert-compile (or (not ?opts) (a.table? opts))
+                    (.. "Expected table for arg #2, got " (type opts)) opts)
+    `(vim.api.nvim_exec_autocmds ,events ,opts)))
+
 {
- :aug- aug-
- :auc- auc-
- :def-aug- def-aug-}
+ : cle-auc!
+ : cle-auc<-event!
+ : cle-auc<-pattern!
+ : cle-auc<-buffer!
+ : cle-auc<-group!
+ : get-auc
+ : get-auc<-event
+ : get-auc<-pattern
+ : get-auc<-group
+ : do-auc
+ : aug-
+ : auc-
+ : del-aug!
+ : def-aug-}
 

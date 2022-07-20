@@ -86,7 +86,28 @@
           (table.insert out# val#))))
     `,out#))
 
+;; Macro -- clear out autocmds based on multiple queries
+(fn auc-multi! [tbl]
+  (assert-compile (if (not= (type tbl) :table) "not table")
+                  "Expected table" tbl))
+
+;; Macro -- clear autocmd by event
+(fn auc-event! [events]
+  (if (= (type events) :string)
+    `(vim.api.nvim_clear_autocmds {:event ,events})
+    (= (type events) :table)
+    (let [opts# []]
+      (each [_ event# (pairs events)]
+        (table.insert opts# event#))
+      `(vim.api.nvim_clear_autocmds ,opts#))
+    (assert-compile (if (and (not= (type events) :string)
+                             (not= (type events) :table))
+                      "test")
+                    "Expected table or string" events)))
+
 {
+ :auc-multi! auc-multi!
+ :auc-event! auc-event!
  :aug- aug-
  :auc- auc-
  :def-aug- def-aug-}
