@@ -2,6 +2,43 @@
 
 This is a collection of macros intended to the functionality of various Neovim related Fennel needs. Neovim based macros are found in `macros/nvim`, with the rest of the macro groups being self explanatory.
 
+# Naming Conventions
+Macros available are intended to keep with Fennel [style conventions](https://fennel-lang.org/style#names) as much as possible. The conventions should be understandable at a glance, but for clarity in the project they will be described here.
+
+## Creation, Definition, Clearing, and Deletion
+The Neovim API is generally very clear in its naming on what each API function acheives. `nvim_del` is for global deletion operations, `nvim_win_del` for window deletion operations, and so on. In order to maintain this level of explicit clarity, I have used a clear naming convention for each of these base operations:
+
+| Convention | Operation | Description |
+|---|---|---|
+|`cre-` | create | For creation of objects, but not return of one |
+|`def-` | definition | For definition of created objects, returns a value |
+|`cle-` | clearing | For clearing of an object's values, but not deletion |
+|`del-` | deletion | For deleting an object entirely |
+
+```fennel
+;; No returned value, cannot be manipulated by itself
+(cre-auc :BufEnter :* (fn [] "Hello world") "BufEnter hello world")
+;; Returns a value, can be manipulated with 'autocmd' variable
+(local autocmd (def-auc :BufEnter :* (fn [] "Hello world") "BufEnter hello world")
+;; Clear out all "BufEnter" autocommands
+(cle-auc! {:event :BufEnter})
+;; Delete 'autocmd' autocommand explicitly
+(del-auc! autocmd)
+```
+
+Each convention prefix is meant to pronounced literally, for instance `cre-auc` is pronounced as "kree-awk".
+
+## `!`
+In Fennel's style guide, `!` as a suffix refers to file-system operations. I have extended this to imply state updates. `cle-` and `del-` are explicit updates of Neovim's state, and thus will always be suffixed by `!`. This character can be pronounced as "bang". `cle-auc!` would be pronounced as "kle-awk-bang".
+
+## `-`
+`-` as a suffix implies a shortening from Vim/Neovim functions. For instance, `nno-` would not be pronounced as 'en-en-oh', but as "normal mode remap" from `nnoremap`. The use of these is minimized where appropriate, and likely will be removed entirely from these macros at a future date.
+
+## `<-`, `->`
+In Fennel's style guide, `->` is used for conversion functions. For instance taking a string and making it into a sequential table would be `string->table`. `->` thus gets read as "to", making this function "string to table". This convention is used where appropriate.
+
+Conversely, `<-` becomes "from", and implies a source to look from *or* a file to read from if it is a file system operation. A function to clear an autocommand specifically from a list of events would be `cle-auc<-event!`, which would be read as "kle-awk-from-event". This is generally used when one only wishes to do 1 level of search.
+
 # Macros
 
 ## nvim.api
