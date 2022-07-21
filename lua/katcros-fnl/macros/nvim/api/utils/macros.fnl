@@ -19,6 +19,25 @@
 (local a (require :aniseed.core))
 (local s (require :aniseed.string))
 
+(local truthy-functions {
+                         :bufexists true
+                         :buflisted true
+                         :bufloaded true
+                         :did_filetype true
+                         :empty true
+                         :exists true
+                         :eventhandler true
+                         :filereadable true
+                         :filewriteable true
+                         :has true
+                         :has_key true
+                         :haslocaldir true
+                         :hasmapto true
+                         :hlexists true
+                         :isdirectory true
+                         :islocked true
+                         :isnan true})
+
 ;; Macro -- call Ex/user commands a bit more cleanly
 ;; @function -- the function demanded
 ;; @... -- string for arguments
@@ -30,6 +49,18 @@
     (each [k v (pairs args)]
       (set output (.. output " " (tostring v))))
     `(vim.api.nvim_command ,output)))
+
+(fn do-viml [function ...] "Macro -- run a VimL function
+Returing boolean for builtin truthy/falsy functions such as 'has()'"
+  (let [args# ...
+        func# (tostring function)]
+    (if (. truthy-functions func#)
+      `(do
+         (let [result# ((. vim.fn ,func#) ,...)]
+            (if (= result# 0)
+              false
+              true)))
+      `((. vim.fn ,func#) ,...))))
 
 ;; Macro -- create a user command
 ;; Has 3 outputs
@@ -139,6 +170,7 @@ Buffer created user commands will fail if ?buffer is not provided"
  : def-command
  : del-command
  : do-command
+ : do-viml
  :com- com-
  :command- command-
  :command*-vim command*-vim}
