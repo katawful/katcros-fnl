@@ -16,6 +16,9 @@
 
 ;;; Macros for Neovim utilities
 
+(local a (require :aniseed.core))
+(local s (require :aniseed.string))
+
 ;; Macro -- call Ex/user commands a bit more cleanly
 ;; @function -- the function demanded
 ;; @... -- string for arguments
@@ -37,7 +40,8 @@
 ;; @command -- whatever fennel function desired
 ;; @desc -- description, or opts table if no description
 ;; @args -- opts table when description is used
-(fn command- [name command desc args]
+(fn cre-command [name command desc args]
+  "Macro -- create a user command"
   (let [opts# {}]
     (if (= (type desc) :table)
       ; no description but opts table
@@ -70,6 +74,40 @@
       (do
         `(vim.api.nvim_create_user_command ,name ,command ,opts#)))))
 
+(fn def-command [name command desc args] "Macro -- define a user command with a returned value
+Returns a string of the user-command name"
+ `(do
+    ,(cre-command name command desc args)
+    ,name))
+
+(fn del-command [name ?buffer] "Macro -- delete a user command
+Buffer created user commands will fail if ?buffer is not provided"
+  (if ?buffer
+    (assert-compile (or (= ?buffer true)
+                        (= (type ?buffer) :number))
+                    (.. "Expected true or number for arg #2, got " (type ?buffer))
+                    ?buffer)
+    (if (= ?buffer true)
+      `(vim.api.nvim_buf_del_user_command ,name 0)
+      `(vim.api.nvim_buf_del_user_command ,name ,?buffer))
+    `(vim.api.nvim_del_user_command ,name)))
+
+(fn do-command [command# ...] "Macro -- run a user command"
+  (let [pre-pre-args# []
+        pre-args# (each [_ v# (ipairs [...])]
+                    (if (a.string? v#)
+                      (table.insert pre-pre-args# (.. "\"" v# "\""))
+                      (table.insert pre-pre-args# (a.str v#))))
+        args# (s.join " " pre-pre-args#)
+        start-char# (string.sub (tostring command#) 1 1)
+        output# (.. (tostring command#) " " args#)]
+    (assert-compile (start-char#:match "[A-Z]")
+                    "Expected a user command that starts with an upper-case letter"
+                    command#)
+   `(vim.cmd ,output#)))
+
+(fn command- [...] "Macro -- alias for cre-command" (cre-command ...))
+
 ;; Macro -- create a user command using vimscript for non-0.7 users
 ;; @name -- command name
 ;; @attributes -- a table of user command attributes
@@ -97,6 +135,10 @@
      (vim.api.nvim_command ,output#)))
 
 {
+ : cre-command
+ : def-command
+ : del-command
+ : do-command
  :com- com-
  :command- command-
  :command*-vim command*-vim}
