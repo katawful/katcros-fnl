@@ -50,6 +50,20 @@
       (set output (.. output " " (tostring v))))
     `(vim.api.nvim_command ,output)))
 
+(fn do-ex [function ...] "Macro -- run a Ex command
+Can accept a table for functions that take key=val args"
+  (let [args# [...]
+        arg-string# []]
+    (each [_ arg# (ipairs args#)]
+      (if (a.table? arg#)
+        (each [key# val# (pairs arg#)]
+          (table.insert arg-string#
+                        (string.format "%s=%s" key# val#)))
+        (table.insert arg-string# arg#)))
+    (let [output# (.. (tostring function) " "
+                    (s.join " " arg-string#))]
+      `(vim.api.nvim_exec ,output# true))))
+
 (fn do-viml [function ...] "Macro -- run a VimL function
 Returing boolean for builtin truthy/falsy functions such as 'has()'"
   (let [args# ...
@@ -171,6 +185,7 @@ Buffer created user commands will fail if ?buffer is not provided"
  : del-command
  : do-command
  : do-viml
+ : do-ex
  :com- com-
  :command- command-
  :command*-vim command*-vim}
