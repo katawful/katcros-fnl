@@ -25,12 +25,14 @@
   (if (pcall vim.api.nvim_get_option_info opt)
     (. (vim.api.nvim_get_option_info opt) :scope)
     false))
+
 (fn scope [opt]
-  "Macro -- get the scope of an option"
+  "Get the scope of an option"
   (let [opt# (tostring opt)]
     (if (pcall vim.api.nvim_get_option_info opt#)
       (. (vim.api.nvim_get_option_info opt#) :scope)
       false)))
+
 ;; Macro set the value of an option based on its scope
 (fn set-option [option value scope]
   "Macro set the value of an option based on its scope"
@@ -92,6 +94,39 @@
                                 "Expected append, prepend, or remove, got '%s'" ?flag) ?flag)))
     (let [opt# (tostring option)]
       `(tset vim.opt_global ,opt# ,value))))
+
+(fn set-opt-auto [option value ?flag] "Macro -- set an option with auto scope
+Generally, 'set' from Vim will try to use the global scope for anything.
+If you want a local scope you have to use 'setlocal'. This is generally
+not particularly clean, as you then have to remember what is what kind of
+scope. This macro fixes this by always preferring the local scope if available
+but not restricting the use of global-only scoped options
+(set-opts-auto spell true) -> will set spell locally
+(set-opts-auto mouse :nvi) -> will set mouse globally
+(set-opts spell true)      -> will set spell globally
+
+This macro is generally preferred when no specification is needed."
+ (when ?flag
+   (do
+     (assert-compile (a.string? ?flag)
+                     (string.format "Expected string, got %s" (type ?flag))
+                     ?flag)
+     (assert-compile (or (= ?flag :append)
+                         (= ?flag :prepend)
+                         (= ?flag :remove))
+                     (string.format "Expected append, prepend, or remove; got '%s'" ?flag)
+                     ?flag)))
+ (let [scope# (scope option)
+       opt# (tostring option)]
+   (if ?flag
+     (match scope#
+       :win `(: (. vim.opt_local ,opt#) ,?flag ,value)
+       :buf `(: (. vim.opt_local ,opt#) ,?flag ,value)
+       :global `(: (. vim.opt_global ,opt#) ,?flag ,value))
+     (match scope#
+       :win `(tset vim.opt_local ,opt# ,value)
+       :buf `(tset vim.opt_local ,opt# ,value)
+       :global `(tset vim.opt_global ,opt# ,value)))))
 
 ;; Macro -- set a global option
 (fn setg- [option value]
@@ -168,6 +203,7 @@
  : set-opt
  : set-local-opt
  : set-global-opt
+ : set-opt-auto
  :let- let-
  :set- set-
  :setl- setl-
