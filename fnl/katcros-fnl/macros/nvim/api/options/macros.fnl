@@ -16,6 +16,8 @@
 
 ;;; Macro file for option management
 
+(local a (require :aniseed.core))
+
 ;; Private macros
 ;; Macro -- get the scope of an option
 (fn get-scope [opt]
@@ -23,6 +25,12 @@
   (if (pcall vim.api.nvim_get_option_info opt)
     (. (vim.api.nvim_get_option_info opt) :scope)
     false))
+(fn scope [opt]
+  "Macro -- get the scope of an option"
+  (let [opt# (tostring opt)]
+    (if (pcall vim.api.nvim_get_option_info opt#)
+      (. (vim.api.nvim_get_option_info opt#) :scope)
+      false)))
 ;; Macro set the value of an option based on its scope
 (fn set-option [option value scope]
   "Macro set the value of an option based on its scope"
@@ -30,6 +38,60 @@
     :global `(vim.api.nvim_set_option ,option ,value)
     :win `(vim.api.nvim_win_set_option 0 ,option ,value)
     :buf `(vim.api.nvim_buf_set_option 0 ,option ,value)))
+
+(fn set-opt [option value ?flag] "Macro -- set an option"
+  (if ?flag
+    (do
+      (assert-compile (a.string? ?flag) (.. "Expected string, got " (type ?flag)) ?flag)
+      (match ?flag
+        :append (let [opt# (tostring option)]
+                  `(: (. vim.opt ,opt#) :append ,value))
+        :prepend (let [opt# (tostring option)]
+                   `(: (. vim.opt ,opt#) :prepend ,value))
+        :remove (let [opt# (tostring option)]
+                  `(: (. vim.opt ,opt#) :remove ,value))
+        _ (assert-compile nil (string.format
+                                "Expected append, prepend, or remove, got '%s'" ?flag) ?flag)))
+    (let [opt# (tostring option)]
+      `(tset vim.opt ,opt# ,value))))
+
+(fn set-local-opt [option value ?flag] "Macro -- set a local option"
+  (assert-compile (= (scope option) (or :win :buf))
+                  (string.format "Expected local option, got %s option" (scope option))
+                  option)
+  (if ?flag
+    (do
+      (assert-compile (a.string? ?flag) (.. "Expected string, got " (type ?flag)) ?flag)
+      (match ?flag
+        :append (let [opt# (tostring option)]
+                  `(: (. vim.opt_local ,opt#) :append ,value))
+        :prepend (let [opt# (tostring option)]
+                   `(: (. vim.opt_local ,opt#) :prepend ,value))
+        :remove (let [opt# (tostring option)]
+                  `(: (. vim.opt_local ,opt#) :remove ,value))
+        _ (assert-compile nil (string.format
+                                "Expected append, prepend, or remove, got '%s'" ?flag) ?flag)))
+    (let [opt# (tostring option)]
+      `(tset vim.opt_local ,opt# ,value))))
+
+(fn set-global-opt [option value ?flag] "Macro -- set a global option"
+  (assert-compile (= (scope option) :global)
+                 (string.format "Expected global option, got %s option" (scope option))
+                 option)
+  (if ?flag
+    (do
+      (assert-compile (a.string? ?flag) (.. "Expected string, got " (type ?flag)) ?flag)
+      (match ?flag
+        :append (let [opt# (tostring option)]
+                  `(: (. vim.opt_global ,opt#) :append ,value))
+        :prepend (let [opt# (tostring option)]
+                   `(: (. vim.opt_global ,opt#) :prepend ,value))
+        :remove (let [opt# (tostring option)]
+                  `(: (. vim.opt_global ,opt#) :remove ,value))
+        _ (assert-compile nil (string.format
+                                "Expected append, prepend, or remove, got '%s'" ?flag) ?flag)))
+    (let [opt# (tostring option)]
+      `(tset vim.opt_global ,opt# ,value))))
 
 ;; Macro -- set a global option
 (fn setg- [option value]
@@ -103,6 +165,9 @@
       :env `(tset vim.env ,obj ,value))))
 
 {
+ : set-opt
+ : set-local-opt
+ : set-global-opt
  :let- let-
  :set- set-
  :setl- setl-
