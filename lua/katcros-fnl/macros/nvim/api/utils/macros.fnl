@@ -16,9 +16,6 @@
 
 ;;; Macros for Neovim utilities
 
-(local a (require :aniseed.core))
-(local s (require :aniseed.string))
-
 (local truthy-functions {
                          :bufexists true
                          :buflisted true
@@ -55,13 +52,16 @@ Can accept a table for functions that take key=val args"
   (let [args# [...]
         arg-string# []]
     (each [_ arg# (ipairs args#)]
-      (if (a.table? arg#)
+      (if (= (type arg#) :table)
         (each [key# val# (pairs arg#)]
           (table.insert arg-string#
                         (string.format "%s=%s" key# val#)))
         (table.insert arg-string# arg#)))
+    (var str# "")
+    (each [_ v# (ipairs arg-string#)]
+      (set str# (string.format "%s %s" str# v#)))
     (let [output# (.. (tostring function) " "
-                    (s.join " " arg-string#))]
+                    str#)]
       `(vim.api.nvim_exec ,output# true))))
 
 (fn do-viml [function ...] "Macro -- run a VimL function
@@ -138,18 +138,25 @@ Buffer created user commands will fail if ?buffer is not provided"
     `(vim.api.nvim_del_user_command ,name)))
 
 (fn do-command [command# ...] "Macro -- run a user command"
-  (let [pre-pre-args# []
-        pre-args# (each [_ v# (ipairs [...])]
-                    (if (a.string? v#)
-                      (table.insert pre-pre-args# (.. "\"" v# "\""))
-                      (table.insert pre-pre-args# (a.str v#))))
-        args# (s.join " " pre-pre-args#)
-        start-char# (string.sub (tostring command#) 1 1)
-        output# (.. (tostring command#) " " args#)]
+  (let [args# [...]
+        arg-string# []
+        start-char# (string.sub (tostring command#) 1 1)]
+    (each [_ arg# (ipairs args#)]
+      (if (= (type arg#) :table)
+        (each [key# val# (pairs arg#)]
+          (table.insert arg-string#
+                        (string.format "%s=%s" key# val#)))
+        (= (type arg#) :string)
+        (table.insert arg-string# (.. "\"" arg# "\""))
+        (table.insert arg-string# arg#)))
+    (var str# "")
+    (each [_ v# (ipairs arg-string#)]
+      (set str# (string.format "%s %s" str# v#)))
     (assert-compile (start-char#:match "[A-Z]")
                     "Expected a user command that starts with an upper-case letter"
                     command#)
-   `(vim.cmd ,output#)))
+    (let [output# (.. (tostring command#) " " str#)]
+     `(vim.cmd ,output#))))
 
 (fn command- [...] "Macro -- alias for cre-command" (cre-command ...))
 

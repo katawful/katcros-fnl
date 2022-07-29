@@ -16,8 +16,6 @@
 
 ;;; Macro file for option management
 
-(local a (require :aniseed.core))
-
 ;; Private macros
 ;; Macro -- get the scope of an option
 (fn get-scope [opt]
@@ -44,7 +42,8 @@
 (fn set-opt [option value ?flag] "Macro -- set an option"
   (if ?flag
     (do
-      (assert-compile (a.string? ?flag) (.. "Expected string, got " (type ?flag)) ?flag)
+      (assert-compile (= (type ?flag) :string)
+                      (.. "Expected string, got " (type ?flag)) ?flag)
       (match ?flag
         :append (let [opt# (tostring option)]
                   `(: (. vim.opt ,opt#) :append ,value))
@@ -64,7 +63,8 @@
                   option)
   (if ?flag
     (do
-      (assert-compile (a.string? ?flag) (.. "Expected string, got " (type ?flag)) ?flag)
+      (assert-compile (= (type ?flag) :string)
+                      (.. "Expected string, got " (type ?flag)) ?flag)
       (match ?flag
         :append (let [opt# (tostring option)]
                   `(: (. vim.opt_local ,opt#) :append ,value))
@@ -83,7 +83,8 @@
                  option)
   (if ?flag
     (do
-      (assert-compile (a.string? ?flag) (.. "Expected string, got " (type ?flag)) ?flag)
+      (assert-compile (= (type ?flag) :string)
+                      (.. "Expected string, got " (type ?flag)) ?flag)
       (match ?flag
         :append (let [opt# (tostring option)]
                   `(: (. vim.opt_global ,opt#) :append ,value))
@@ -110,7 +111,7 @@ This macro is generally preferred when no specification is needed.
 However, since it sets local options its generally avoided for system wide configs."
  (when ?flag
    (do
-     (assert-compile (a.string? ?flag)
+     (assert-compile (= (type ?flag) :string)
                      (string.format "Expected string, got %s" (type ?flag))
                      ?flag)
      (assert-compile (or (= ?flag :append)
@@ -134,7 +135,7 @@ However, since it sets local options its generally avoided for system wide confi
 Takes key-value table of options"
  (when ?flag
    (do
-     (assert-compile (a.string? ?flag)
+     (assert-compile (= (type ?flag) :string)
                      (string.format "Expected string, got %s" (type ?flag))
                      ?flag)
      (assert-compile (or (= ?flag :append)
@@ -154,7 +155,7 @@ Takes key-value table of options"
 Takes key-value table of options"
  (when ?flag
    (do
-     (assert-compile (a.string? ?flag)
+     (assert-compile (= (type ?flag) :string)
                      (string.format "Expected string, got %s" (type ?flag))
                      ?flag)
      (assert-compile (or (= ?flag :append)
@@ -178,7 +179,7 @@ Takes key-value table of options"
 Takes key-value table of options"
  (when ?flag
    (do
-     (assert-compile (a.string? ?flag)
+     (assert-compile (= (type ?flag) :string)
                      (string.format "Expected string, got %s" (type ?flag))
                      ?flag)
      (assert-compile (or (= ?flag :append)
@@ -212,7 +213,7 @@ This macro is generally preferred when no specification is needed.
 However, since it sets local options its generally avoided for system wide configs."
  (when ?flag
    (do
-     (assert-compile (a.string? ?flag)
+     (assert-compile (= (type ?flag) :string)
                      (string.format "Expected string, got %s" (type ?flag))
                      ?flag)
      (assert-compile (or (= ?flag :append)
