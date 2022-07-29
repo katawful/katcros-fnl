@@ -58,7 +58,8 @@
       `(tset vim.opt ,opt# ,value))))
 
 (fn set-local-opt [option value ?flag] "Macro -- set a local option"
-  (assert-compile (= (scope option) (or :win :buf))
+  (assert-compile (or (= (scope option) :win) 
+                      (= (scope option) :buf))
                   (string.format "Expected local option, got %s option" (scope option))
                   option)
   (if ?flag
@@ -105,7 +106,8 @@ but not restricting the use of global-only scoped options
 (set-opt-auto mouse :nvi) -> will set mouse globally
 (set-opt spell true)      -> will set spell globally
 
-This macro is generally preferred when no specification is needed."
+This macro is generally preferred when no specification is needed.
+However, since it sets local options its generally avoided for system wide configs."
  (when ?flag
    (do
      (assert-compile (a.string? ?flag)
@@ -162,7 +164,8 @@ Takes key-value table of options"
                      ?flag)))
  (let [output# []]
    (each [option# value# (pairs options)]
-     (assert-compile (= (scope option#) (or :win :buf))
+     (assert-compile (or (= (scope option#) :win) 
+                         (= (scope option#) :buf))
                      (string.format "Expected local option, got %s option" (scope option#))
                      option#)
      (let [opt# (tostring option#)]
@@ -205,7 +208,8 @@ but not restricting the use of global-only scoped options
 (set-opt-auto mouse :nvi) -> will set mouse globally
 (set-opt spell true)      -> will set spell globally
 
-This macro is generally preferred when no specification is needed."
+This macro is generally preferred when no specification is needed.
+However, since it sets local options its generally avoided for system wide configs."
  (when ?flag
    (do
      (assert-compile (a.string? ?flag)
