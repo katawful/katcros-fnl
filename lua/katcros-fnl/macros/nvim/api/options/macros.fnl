@@ -101,9 +101,9 @@ If you want a local scope you have to use 'setlocal'. This is generally
 not particularly clean, as you then have to remember what is what kind of
 scope. This macro fixes this by always preferring the local scope if available
 but not restricting the use of global-only scoped options
-(set-opts-auto spell true) -> will set spell locally
-(set-opts-auto mouse :nvi) -> will set mouse globally
-(set-opts spell true)      -> will set spell globally
+(set-opt-auto spell true) -> will set spell locally
+(set-opt-auto mouse :nvi) -> will set mouse globally
+(set-opt spell true)      -> will set spell globally
 
 This macro is generally preferred when no specification is needed."
  (when ?flag
@@ -127,6 +127,107 @@ This macro is generally preferred when no specification is needed."
        :win `(tset vim.opt_local ,opt# ,value)
        :buf `(tset vim.opt_local ,opt# ,value)
        :global `(tset vim.opt_global ,opt# ,value)))))
+
+(fn set-opts [options ?flag] "Macro -- plural of set-opt
+Takes key-value table of options"
+ (when ?flag
+   (do
+     (assert-compile (a.string? ?flag)
+                     (string.format "Expected string, got %s" (type ?flag))
+                     ?flag)
+     (assert-compile (or (= ?flag :append)
+                         (= ?flag :prepend)
+                         (= ?flag :remove))
+                     (string.format "Expected append, prepend, or remove; got '%s'" ?flag)
+                     ?flag)))
+ (let [output# []]
+   (each [option# value# (pairs options)]
+     (let [opt# (tostring option#)]
+       (if ?flag
+         (table.insert output# `(: (. vim.opt ,opt#) ,?flag ,value#))
+         (table.insert output# `(tset vim.opt ,opt# ,value#)))))
+   `,output#))
+
+(fn set-local-opts [options ?flag] "Macro -- plural of set-local-opt
+Takes key-value table of options"
+ (when ?flag
+   (do
+     (assert-compile (a.string? ?flag)
+                     (string.format "Expected string, got %s" (type ?flag))
+                     ?flag)
+     (assert-compile (or (= ?flag :append)
+                         (= ?flag :prepend)
+                         (= ?flag :remove))
+                     (string.format "Expected append, prepend, or remove; got '%s'" ?flag)
+                     ?flag)))
+ (let [output# []]
+   (each [option# value# (pairs options)]
+     (assert-compile (= (scope option#) (or :win :buf))
+                     (string.format "Expected local option, got %s option" (scope option#))
+                     option#)
+     (let [opt# (tostring option#)]
+       (if ?flag
+         (table.insert output# `(: (. vim.opt_local ,opt#) ,?flag ,value#))
+         (table.insert output# `(tset vim.opt_local ,opt# ,value#)))))
+   `,output#))
+
+(fn set-global-opts [options ?flag] "Macro -- plural of set-global-opt
+Takes key-value table of options"
+ (when ?flag
+   (do
+     (assert-compile (a.string? ?flag)
+                     (string.format "Expected string, got %s" (type ?flag))
+                     ?flag)
+     (assert-compile (or (= ?flag :append)
+                         (= ?flag :prepend)
+                         (= ?flag :remove))
+                     (string.format "Expected append, prepend, or remove; got '%s'" ?flag)
+                     ?flag)))
+ (let [output# []]
+   (each [option# value# (pairs options)]
+     (assert-compile (= (scope option#) :global)
+                     (string.format "Expected global option, got %s option" (scope option#))
+                     option#)
+     (let [opt# (tostring option#)]
+       (if ?flag
+         (table.insert output# `(: (. vim.opt_global ,opt#) ,?flag ,value#))
+         (table.insert output# `(tset vim.opt_global ,opt# ,value#)))))
+   `,output#))
+
+(fn set-opts-auto [options ?flag] "Macro -- plural of set-opt-auto
+Takes key-value table of options
+Generally, 'set' from Vim will try to use the global scope for anything.
+If you want a local scope you have to use 'setlocal'. This is generally
+not particularly clean, as you then have to remember what is what kind of
+scope. This macro fixes this by always preferring the local scope if available
+but not restricting the use of global-only scoped options
+(set-opt-auto spell true) -> will set spell locally
+(set-opt-auto mouse :nvi) -> will set mouse globally
+(set-opt spell true)      -> will set spell globally
+
+This macro is generally preferred when no specification is needed."
+ (when ?flag
+   (do
+     (assert-compile (a.string? ?flag)
+                     (string.format "Expected string, got %s" (type ?flag))
+                     ?flag)
+     (assert-compile (or (= ?flag :append)
+                         (= ?flag :prepend)
+                         (= ?flag :remove))
+                     (string.format "Expected append, prepend, or remove; got '%s'" ?flag)
+                     ?flag)))
+ (let [output# []]
+   (each [option# value# (pairs options)]
+     (let [opt# (tostring option#)
+           scope# (scope option#)]
+       (if (= scope# :global)
+         (if ?flag
+           (table.insert output# `(: (. vim.opt_global ,opt#) ,?flag ,value#))
+           (table.insert output# `(tset vim.opt_global ,opt# ,value#)))
+         (if ?flag
+           (table.insert output# `(: (. vim.opt_local ,opt#) ,?flag ,value#))
+           (table.insert output# `(tset vim.opt_local ,opt# ,value#))))))
+   `,output#))
 
 ;; Macro -- set a global option
 (fn setg- [option value]
@@ -204,6 +305,10 @@ This macro is generally preferred when no specification is needed."
  : set-local-opt
  : set-global-opt
  : set-opt-auto
+ : set-opts
+ : set-local-opts
+ : set-global-opts
+ : set-opts-auto
  :let- let-
  :set- set-
  :setl- setl-
