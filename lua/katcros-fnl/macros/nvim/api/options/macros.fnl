@@ -16,8 +16,6 @@
 
 ;;; Macro file for option management
 
-(local a (require :aniseed.core))
-
 ;; Private macros
 ;; Macro -- get the scope of an option
 (fn get-scope [opt]
@@ -236,6 +234,10 @@ However, since it sets local options its generally avoided for system wide confi
            (table.insert output# `(tset vim.opt_local ,opt# ,value#))))))
    `,output#))
 
+(fn get-opt [option] "Macro -- get an option's value"
+  (let [opt# (tostring option)]
+    `(: (. vim.opt ,opt#) :get)))
+
 ;; Macro -- set a global option
 (fn setg- [option value]
   "Macro -- set a global option"
@@ -307,6 +309,32 @@ However, since it sets local options its generally avoided for system wide confi
       :v `(tset vim.v ,obj ,value)
       :env `(tset vim.env ,obj ,value))))
 
+
+(fn set-var [scope variable value] "Macro -- set a Vim variable
+For b, w, and t scope, they can be indexed like (. b 1) for their
+Lua table equivalent. The other scopes can't take an index and will
+return an error."
+  (let [test-scope# (tostring scope)
+        var# (tostring variable)]
+    (if (list? scope)
+      ;; need to destruct the indexed list and inject the appropriate table
+      (let [matched-scope# (tostring (. scope 2))
+            index# (. scope 3)]
+       (assert-compile (or (= matched-scope# :b)
+                           (= matched-scope# :w)
+                           (= matched-scope# :t))
+                       (string.format "Expected b, w, or t scope; got %s" matched-scope#)
+                       matched-scope#)
+       `(tset (. (. vim ,matched-scope#) ,index#) ,var# ,value))
+      (let [scope# (tostring scope)]
+        (assert-compile (or (= scope# :g)
+                            (= scope# :b)
+                            (= scope# :w)
+                            (= scope# :t)
+                            (= scope# :v)
+                            (= scope# :env)))
+        `(tset (. vim ,scope#) ,var# ,value)))))
+
 {
  : set-opt
  : set-local-opt
@@ -316,6 +344,8 @@ However, since it sets local options its generally avoided for system wide confi
  : set-local-opts
  : set-global-opts
  : set-opts-auto
+ : get-opt
+ : set-var
  :let- let-
  :set- set-
  :setl- setl-
