@@ -238,6 +238,37 @@ However, since it sets local options its generally avoided for system wide confi
   (let [opt# (tostring option)]
     `(: (. vim.opt ,opt#) :get)))
 
+(fn set-var [scope variable value] "Macro -- set a Vim variable
+For b, w, and t scope, they can be indexed like (. b 1) for their
+Lua table equivalent. The other scopes can't take an index and will
+return an error."
+  (let [test-scope# (tostring scope)
+        var# (tostring variable)]
+    (if (list? scope)
+      ;; need to destruct the indexed list and inject the appropriate table
+      (let [matched-scope# (tostring (. scope 2))
+            index# (. scope 3)]
+       (assert-compile (or (= matched-scope# :b)
+                           (= matched-scope# :w)
+                           (= matched-scope# :t))
+                       (string.format "Expected b, w, or t scope; got %s" matched-scope#)
+                       matched-scope#)
+       `(tset (. (. vim ,matched-scope#) ,index#) ,var# ,value))
+      (let [scope# (tostring scope)]
+        (assert-compile (or (= scope# :g)
+                            (= scope# :b)
+                            (= scope# :w)
+                            (= scope# :t)
+                            (= scope# :v)
+                            (= scope# :env)))
+        `(tset (. vim ,scope#) ,var# ,value)))))
+
+(fn set-vars [scope variables] "Macro -- plural of set-var for one scope"
+  (let [output# []]
+   (each [variable# value# (pairs variables)]
+     (table.insert output# `,(set-var scope variable# value#)))
+   `,output#))
+
 ;; Macro -- set a global option
 (fn setg- [option value]
   "Macro -- set a global option"
@@ -310,31 +341,6 @@ However, since it sets local options its generally avoided for system wide confi
       :env `(tset vim.env ,obj ,value))))
 
 
-(fn set-var [scope variable value] "Macro -- set a Vim variable
-For b, w, and t scope, they can be indexed like (. b 1) for their
-Lua table equivalent. The other scopes can't take an index and will
-return an error."
-  (let [test-scope# (tostring scope)
-        var# (tostring variable)]
-    (if (list? scope)
-      ;; need to destruct the indexed list and inject the appropriate table
-      (let [matched-scope# (tostring (. scope 2))
-            index# (. scope 3)]
-       (assert-compile (or (= matched-scope# :b)
-                           (= matched-scope# :w)
-                           (= matched-scope# :t))
-                       (string.format "Expected b, w, or t scope; got %s" matched-scope#)
-                       matched-scope#)
-       `(tset (. (. vim ,matched-scope#) ,index#) ,var# ,value))
-      (let [scope# (tostring scope)]
-        (assert-compile (or (= scope# :g)
-                            (= scope# :b)
-                            (= scope# :w)
-                            (= scope# :t)
-                            (= scope# :v)
-                            (= scope# :env)))
-        `(tset (. vim ,scope#) ,var# ,value)))))
-
 {
  : set-opt
  : set-local-opt
@@ -346,6 +352,7 @@ return an error."
  : set-opts-auto
  : get-opt
  : set-var
+ : set-vars
  :let- let-
  :set- set-
  :setl- setl-
