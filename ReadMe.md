@@ -14,16 +14,32 @@ The Neovim API is generally very clear in its naming on what each API function a
 |`def-` | definition | For definition of created objects, returns a value |
 |`cle-` | clearing | For clearing of an object's values, but not deletion |
 |`del-` | deletion | For deleting an object entirely |
+|`set-` | setter | For setting the value of an object |
+|`get-` | getter | For getting the value of an object |
+|`do-` | execution | Execute the object |
 
-```fennel
+```clojure
 ;; No returned value, cannot be manipulated by itself
+;; "cre-awk bufenter"
 (cre-auc :BufEnter :* (fn [] "Hello world") "BufEnter hello world")
 ;; Returns a value, can be manipulated with 'autocmd' variable
+;; "def-awk bufenter"
 (local autocmd (def-auc :BufEnter :* (fn [] "Hello world") "BufEnter hello world")
 ;; Clear out all "BufEnter" autocommands
+;; "cle-awk event bufenter"
 (cle-auc! {:event :BufEnter})
 ;; Delete 'autocmd' autocommand explicitly
+;; "del-awk autocmd"
 (del-auc! autocmd)
+;; Set option 'number'
+;; "set-opt number true"
+(set-opt number true)
+;; Get value of option 'number'
+;; "get-opt number"
+(get-opt number)
+;; Do VimL function
+;; "do-vim-el"
+(do-viml has "nvim-0.7")
 ```
 
 Each convention prefix is meant to pronounced literally, for instance `cre-auc` is pronounced as "kree-awk".
@@ -39,6 +55,82 @@ In Fennel's style guide, `->` is used for conversion functions. For instance tak
 
 Conversely, `<-` becomes "from", and implies a source to look from *or* a file to read from if it is a file system operation. A function to clear an autocommand specifically from a list of events would be `cle-auc<-event!`, which would be read as "kle-awk-from-event". This is generally used when one only wishes to do 1 level of search.
 
+## General Signatures
+In order to maintain consistency, macros here have an expectation of signature behavior. It varies a bit from macro type to macro type.
+
+### Creation Macro
+```clojure
+(cre-macro immediate-info command ?description ?args-table)
+```
+For `immediate-info`, this varies immensely based on the macro in use. For mappings macros, this is actually 2 symbols/lists:
+```clojure
+(map- mode-table left-hand-side command ?description ?args-table)
+```
+For an autocommand macro, it is also 2 symbols/lists. It is kept this way to maintain the general idea of how the Vimscript versions of these functions work overall, rather than go out of the way to make a new syntax.
+
+Additionally, the description and/or args-table are **always** optionally if desired. If either are passed nil then the other will still function as expected.
+
+`immediate-info` (generally) must end up as a string, you can pass a symbol or list that returns a string if needed.
+
+```clojure
+(let [user-command "MyReallyAwesomeAndVeryLongUserCommand"]
+  (cre-command user-command (fn [] (print "hi"))))
+```
+
+### Definition Macro
+This macro behaves the same as the equivalent creation macro, but returns a value. This is useful if you want to further manipulate said values:
+
+```clojure
+(let [user-command (def-command "UserCommand" (fn [] (print "hi")))]
+  (del-command! user-command))
+```
+
+### Deletion and Clear Macros
+For these macros, a "deletion" is specifically about removing the entire object. After the expanded macro is run, the object passed will not exist according to Neovim. A "clearing", on the other hand, will only remove the values present for the object. Neovim will still be aware of the object:
+
+```clojure
+(cle-auc<-event! :BufEnter) ; clear any autocommands found for BufEnter
+(del-command! "UserCommand") ; delete the entire user command "UserCommand"
+```
+
+Deletion/clearing will depend on how the macro in use works, and is in part determined by the underlying API (e.g. `nvim_clear_autocmds` vs `nvim_del_user_command`).
+
+The argument passed depends on the macro in question, although it is usually self-evident.
+
+### Get Macro
+"Get" macros are designed to get the value of some object. This is purely a data access. The data type returned depends on the macro:
+
+```clojure
+(get-auc {:group "SomeCoolGroup"}) ; get autocommands from group "SomeCoolGroup"
+(print (get-opt mouse)) ; print the value of option "mouse"
+```
+
+### Set Macro
+"Set" macros are designed to set the value of some object. This (mostly, see below) implies that the value exists. This is mostly for options macros.
+
+```clojure
+(set-opt mouse true)
+(set-var :g :cool_var true)
+```
+
+Note that due to how Vim variables work, this macro is slightly incongruent in that the variable does not need to exist before being set. This behavior may change in the future.
+
+### Do Macro
+The `do-` macros that interface with `vim.cmd`, due to Neovim 0.7 limitations, have the ability to take a key value table that expands to the proper `key=value` syntax for said functions. The following example will expand to:
+```clojure
+(do-ex highlight :Normal {:guifg :white})
+(vim.api.nvim_exec "highlight Normal guifg=white" true)
+```
+All `do-` macros can take any amount of arguments as needed by the function.
+
+#### `do-viml` Truthy Return
+This macro wraps any 0/1 boolean VimL function and outputs a proper Fennel boolean for you. See the example:
+
+```clojure
+(if (do-viml filereadable :test.txt) (print "is readable"))
+(if (= (vim.fn.filereadable :test.txt) 1) (print "is readable"))
+```
+
 # Macros
 
 ## nvim.api
@@ -48,7 +140,7 @@ These macros deal with interfacing with Neovim directly. They are split up accor
 Handles key maps, attempts to mimic the simplicity of Vimscript's syntax. These all function similarly. A left-hand-side and right-hand-side argument are always needed, but a description and options table is optional, with the options table always being last.
 
 #### Syntax
-```fennel
+```clojure
 ; options table, no description
 (map-macro lhs rhs {:buffer true})
 ; expansion
@@ -94,7 +186,7 @@ Note that the mode is not explicitly set by an argument. This is to mimic Vimscr
 `map-` and `nomap-` take a sequential table of character strings for the corresponding mode. This allows you to map across multiple modes, and are the only macros in which the mode is required.
 
 #### Examples
-```fennel
+```clojure
 ; macro forms
 (nomap- [:n :v] ";" ":" "Swap char search and command-line enter")
 (nomap- [:n :v] ":" ";" "Swap command-line enter and char search")
@@ -119,38 +211,36 @@ Note that the mode is not explicitly set by an argument. This is to mimic Vimscr
 ### utils
 Handles various utilities that aren't associated with any specific grouping
 
-#### `command-`
-Creates a user command. Like the map macros, can take optional description and options table.
+#### User-Commands
+Macros allow full manipulation of user-commands.
 
-##### Syntax
-```fennel
-; no description or options table
-(command- name command)
-; expansion
-(vim.api.nvim_create_user_command name command)
-
-; description, no options table
-(command- name command "Command description")
-; expansion
-(vim.api.nvim_create_user_command name command {:desc "Command description"})
-
-; description and options table
-(command- name command "Command description" {:nargs 1})
-; expansion
-(vim.api.nvim_create_user_command name command {:nargs 1 :desc "Command description"})
-
-; no description, options table
-(command- name command {:nargs 1})
-; expansion
-(vim.api.nvim_create_user_command name command {:nargs 1})
+##### `cre-command`
+Creates a user-command:
+```clojure
+(cre-command command-name command description args-table)
+```
+If the command is to be Vimscript, it must be passed as an entirely enclosed string. A Lua function reference or a defined function can be used.
+```clojure
+(cre-command :ReallyCoolCommand (fn [] (print "butts")) 
+                               "Does some really cool things"
+                               {:nargs 0})
+(fn some-function [args] (print (vim.inspect args)))
+(cre-command :PrintCommandArgs some-function {:nargs :*})
+(cre-command :ChangeColorscheme "colorscheme blue"
+                               "Changes colors to blue")
 ```
 
-##### Examples
-```fennel
+###### Expansion
+```clojure
+(vim.api.nvim_create_user_command command-name command {:desc description arg-key arg-value})
+```
+
+###### Examples
+```clojure
 ; macro form
 (fn files [opts]
   ((. (require :fzf-lua) :files) opts))
-(command- :FZFOpenFile (fn [] (files)) "Open files")
+(cre-command :FZFOpenFile (fn [] (files)) "Open files")
 
 ; expansion
 (fn files [opts]
@@ -162,7 +252,7 @@ Creates a user command. Like the map macros, can take optional description and o
 Run Ex commands a bit more list like. Mostly a convenience macro, does not offer any special functionality.
 
 ##### Syntax
-```fennel
+```clojure
 (com- function arg-string)
 ; expansion
 (vim.api.nvim_command "function arg-string")
@@ -175,7 +265,7 @@ Handles color management.
 Set a colorscheme.
 
 ##### Syntax
-```fennel
+```clojure
 (col- "kat.nvim")
 ; expansion
 (vim.cmd "colorscheme kat.nvim")
@@ -188,7 +278,7 @@ Handles setting of options and scoped variables.
 The macros that contain `set` all have the same macro signature, and are designed to set internal Neovim options (such as 'indentexpr'). They contain the same limitations as the appropriate Lua tables (e.g. `vim.o`), they still evaluate to Vimscript. If a Lua/Fenel function is to be used, it must be passed as you were with Vimscript still. This is a limitation to be improved upon.
 
 ##### Syntax
-```fennel
+```clojure
 (set- option value)
 ```
 `option` is always evaluated to a string, it does not need to be a string itself. `value` must always be passed, even for options being set to true. This is for clarity of use, and functionality.
@@ -206,7 +296,7 @@ The macros that contain `set` all have the same macro signature, and are designe
 |`setr-` | Remove a value from option | `(tset vim.opt option (- vim.opt.option value))` |
 
 ##### Examples
-```fennel
+```clojure
 ; macro forms
 (set- mouse "a")
 (set- number true)
@@ -228,7 +318,7 @@ The macros that contain `set` all have the same macro signature, and are designe
 This sets scoped variables.
 
 ##### Syntax
-```fennel
+```clojure
 (let- :scope :variable value)
 ; expansion
 (tset vim.scope :variable value)
@@ -243,7 +333,7 @@ Handles dealing with autocommands and autogroups.
 Defines an autogroup to be returned for a variable.
 
 ##### Syntax
-```fennel
+```clojure
 (local augroup (def-aug- "GroupName" true))
 ; expansion
 (local augroup (vim.api.nvim_create_augroup "GroupName" {:clear false}))
@@ -254,7 +344,7 @@ The boolean is optional. It inverts the functionality of `nvim_create_augroup`. 
 Creates an autocommand. It is not designed to be accepted by a variable for manipulation. Like maps and user command macros, it can take an optional description and options table. The events, pattern, and callback are required.
 
 ##### Syntax
-```fennel
+```clojure
 ; no description or options table, lua callback
 (auc- :Event "*.file" (fn [] (print "callback")))
 ; expansion
@@ -282,7 +372,7 @@ Creates an autocommand. It is not designed to be accepted by a variable for mani
 Absorbs `auc-` calls within its list, and injects the group throughout each. Only accepts `auc-` after the group variable.
 
 ##### Syntax
-```fennel
+```clojure
 (aug- group
   (auc- :Event "*" (fn [] (print "callback"))))
 ; expansion minus auc-
@@ -294,7 +384,7 @@ Absorbs `auc-` calls within its list, and injects the group throughout each. Onl
 The group must have been previously defined, it cannot be passed through with this macro. For additional notice, only `auc-` calls are accepted. Attempting to use anything else will result in a compile-time error. This is *not* a way to be programmatic about autocommand creation, it is only equivalent to the `->` threading macros in function. Any programmatic work of autocommands must be done in a list outside of this scope.
 
 #### Examples
-```fennel
+```clojure
 ; macro form
 (let [highlight (def-aug- "highlightOnYank")]
   (aug- highlight
@@ -345,7 +435,7 @@ These macros modify some usage for packer.nvim, mostly for my own preferences.
 Condenses the standard packer setup into a one line call, does not support configuring packer.nvim in the same call at the moment.
 
 #### Syntax
-```fennel
+```clojure
 (plugInit
   (use :wbthomason/packer.nvim)
   (use :Olical/aniseed)
@@ -369,7 +459,7 @@ These macros are attempts at adapting forms to something a bit more Lisp-like, s
 Replaces the standard table value lookup.
 
 #### Syntax
-```fennel
+```clojure
 ; with a passed value
 (opt- origin lookup {:value true})
 ; expansion
