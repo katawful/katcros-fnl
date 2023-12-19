@@ -1,7 +1,9 @@
-.PHONY: lua
+.PHONY: test
 
-default: lua
+default: test
 
-lua:
-	rm -rf lua
-	rsync -avur fnl/ lua/
+format:
+	scripts/fnlfmt.sh
+
+test:
+	scripts/test.sh

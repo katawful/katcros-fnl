@@ -15,14 +15,13 @@
 ;;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Macros for color management
+;; [nfnl-macro]
 
 ;; Macro -- set colorscheme
 ;; @scheme -- a string of the colorscheme desired
 (fn col- [scheme]
   "Macro -- set colorscheme"
   (let [scheme# (.. "colorscheme " scheme)]
-   `(vim.cmd ,scheme#)))
+    `(vim.cmd ,scheme#)))
 
-{
- :col- col-}
-
+{: col-}

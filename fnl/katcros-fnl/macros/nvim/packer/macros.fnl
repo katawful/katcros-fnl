@@ -22,8 +22,8 @@
   "Macro -- Initialize packer.nvim"
   `(do
      ((. (require :packer) :startup) (fn []
-                                      (do
-                                        ,...)))))
+                                       (do
+                                         ,...)))))
 
 ;; Macro -- use 'Plug' instead of 'use' for packer.nvim
 ;; @plugin -- standard packer.nvim list
@@ -31,7 +31,4 @@
   "Macro -- call plugin with 'Plug'"
   `(use ,plugin))
 
-{
- :Plug Plug
- :plugInit plugInit}
-
+{: Plug : plugInit}

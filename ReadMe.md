@@ -237,15 +237,60 @@ If the command is to be Vimscript, it must be passed as an entirely enclosed str
 
 ###### Examples
 ```clojure
-; macro form
+;; macro form
 (fn files [opts]
   ((. (require :fzf-lua) :files) opts))
 (cre-command :FZFOpenFile (fn [] (files)) "Open files")
 
-; expansion
+;; expansion
 (fn files [opts]
   ((. (require :fzf-lua) :files) opts))
 (vim.api.nvim_create_user_command :FZFOpenFile (fn [] (files)) {:desc "Open files"})
+```
+
+##### `def-command`
+Defines a user-command:
+```clojure
+(def-command command-name command ?description ?args-table)
+```
+This macro behaves the same as [`cre-command`](#cre-command), but returns `command-name` to be passed to variables. If the returned value is not needed, use `cre-command` instead.
+
+###### Expansion
+```clojure
+(do (vim.api.nvim_create_user_command command-name command {:desc description arg-key arg-value})
+    command-name)
+```
+
+###### Examples
+```clojure
+;; macro form
+(local user-command (def-command :TempUserCommand
+                                 (fn [] (print "hello"))
+                                 {:buffer true}))
+;; expansion
+(local user-command (do (vim.api.nvim_create_user_command :TempUserCommand
+                                                      (fn [] (print "hello"))
+                                                      {:buffer 0})
+                        :TempUserCommand))
+```
+
+##### `del-command`
+Deletes a user-command:
+```clojure
+(del-command command-name ?buffer)
+```
+User-commands created for a buffer must pass `?buffer` due to limitations in the API.
+
+###### Expansion
+```clojure
+(del-command command-name)
+(vim.api.nvim_del_user_command command-name)
+
+(del-command command-name true)
+(vim.api.nvim_buf_del_user_command command-name 0)
+
+(del-command command-name buffer)
+(vim.api.nvim_buf_del_user_command command buffer)
 ```
 
 #### `com-`
