@@ -152,4 +152,62 @@ local function _41_()
   end
   return it("set-opts-auto with flag", _44_)
 end
-return describe("Automatically set multiple options macro:", _41_)
+describe("Automatically set multiple options macro:", _41_)
+local function _46_()
+  local function _47_()
+    local function _48_()
+      return "(tset (. vim \"g\") \"variable\" \"Value\")"
+    end
+    return assert.are.same("(tset (. vim \"g\") \"variable\" \"Value\")", _48_())
+  end
+  it("set-var with no scope indexing", _47_)
+  local function _49_()
+    local function _50_()
+      return "(tset (. (. vim \"b\") 1) \"variable\" \"Value\")"
+    end
+    return assert.are.same("(tset (. (. vim \"b\") 1) \"variable\" \"Value\")", _50_())
+  end
+  return it("set-var with scope indexing", _49_)
+end
+describe("Set vim variable macro:", _46_)
+local function _51_()
+  local function _52_()
+    local function _53_()
+      return "(do (tset (. vim \"g\") \"variable_2\" true) (tset (. vim \"g\") \"variable_1\" \"Value\"))"
+    end
+    return assert.are.same("(do (tset (. vim \"g\") \"variable_2\" true) (tset (. vim \"g\") \"variable_1\" \"Value\"))", _53_())
+  end
+  it("set-vars with no scope indexing", _52_)
+  local function _54_()
+    local function _55_()
+      return "(do (tset (. (. vim \"b\") 1) \"variable_2\" true) (tset (. (. vim \"b\") 1) \"variable_1\" \"Value\"))"
+    end
+    return assert.are.same("(do (tset (. (. vim \"b\") 1) \"variable_2\" true) (tset (. (. vim \"b\") 1) \"variable_1\" \"Value\"))", _55_())
+  end
+  return it("set-vars with scope indexing", _54_)
+end
+describe("Set multiple vim variables macro:", _51_)
+local function _56_()
+  local function _57_()
+    local function _58_()
+      return "(: (. vim.opt \"option\") \"get\")"
+    end
+    return assert.are.same("(: (. vim.opt \"option\") \"get\")", _58_())
+  end
+  it("get-opt", _57_)
+  local function _59_()
+    local function _60_()
+      return "(. (. vim \"g\") \"variable\")"
+    end
+    return assert.are.same("(. (. vim \"g\") \"variable\")", _60_())
+  end
+  it("get-var with no scope indexing", _59_)
+  local function _61_()
+    local function _62_()
+      return "(. (. (. vim \"b\") 1) \"variable\")"
+    end
+    return assert.are.same("(. (. (. vim \"b\") 1) \"variable\")", _62_())
+  end
+  return it("get-var with scope indexing", _61_)
+end
+return describe("Get option or variable macro:", _56_)

@@ -136,3 +136,49 @@
                                                                       spell true}
                                                                      :append)
                                                true))))))
+(describe "Set vim variable macro:"
+  (fn []
+
+    (it "set-var with no scope indexing"
+      (fn [] (assert.are.same
+              "(tset (. vim \"g\") \"variable\" \"Value\")"
+              (macrodebug (option.set-var :g variable "Value") true))))
+
+    (it "set-var with scope indexing"
+      (fn [] (assert.are.same
+              "(tset (. (. vim \"b\") 1) \"variable\" \"Value\")"
+              (macrodebug (option.set-var (. :b 1) variable "Value") true))))))
+
+(describe "Set multiple vim variables macro:"
+  (fn []
+
+    (it "set-vars with no scope indexing"
+      (fn [] (assert.are.same
+              "(do (tset (. vim \"g\") \"variable_2\" true) (tset (. vim \"g\") \"variable_1\" \"Value\"))"
+              (macrodebug (option.set-vars :g {:variable_1 "Value"
+                                               :variable_2 true}) true))))
+
+    (it "set-vars with scope indexing"
+      (fn [] (assert.are.same
+              "(do (tset (. (. vim \"b\") 1) \"variable_2\" true) (tset (. (. vim \"b\") 1) \"variable_1\" \"Value\"))"
+              (macrodebug (option.set-vars (. :b 1) {:variable_1 "Value"
+                                                     :variable_2 true}) true))))))
+
+(describe "Get option or variable macro:"
+
+  (fn []
+
+    (it "get-opt"
+      (fn [] (assert.are.same
+              "(: (. vim.opt \"option\") \"get\")"
+              (macrodebug (option.get-opt option) true))))
+    
+    (it "get-var with no scope indexing"
+      (fn [] (assert.are.same
+              "(. (. vim \"g\") \"variable\")"
+              (macrodebug (option.get-var :g variable) true))))
+    
+    (it "get-var with scope indexing"
+      (fn [] (assert.are.same
+              "(. (. (. vim \"b\") 1) \"variable\")"
+              (macrodebug (option.get-var (. :b 1) variable) true))))))
