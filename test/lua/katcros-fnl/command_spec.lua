@@ -6,28 +6,28 @@ local assert = require("luassert.assert")
 local function _2_()
   local function _3_()
     local function _4_()
-      return "(vim.cmd {:args {} :cmd \"function\" :output true})"
+      return "(vim.cmd {:args {} :cmd \"function\"})"
     end
     return assert.are.same("(vim.cmd {:args {} :cmd \"function\" :output true})", _4_())
   end
   it("do-ex with no args", _3_)
   local function _5_()
     local function _6_()
-      return "(vim.cmd {:args [\"arg\"] :cmd \"function\" :output true})"
+      return "(vim.cmd {:args [\"arg\"] :cmd \"function\"})"
     end
     return assert.are.same("(vim.cmd {:args [\"arg\"] :cmd \"function\" :output true})", _6_())
   end
   it("do-ex with switch arg", _5_)
   local function _7_()
     local function _8_()
-      return "(vim.cmd {:args [\"key=value\"] :cmd \"function\" :output true})"
+      return "(vim.cmd {:args [\"key=value\"] :cmd \"function\"})"
     end
     return assert.are.same("(vim.cmd {:args [\"key=value\"] :cmd \"function\" :output true})", _8_())
   end
   it("do-ex with table arg", _7_)
   local function _9_()
     local function _10_()
-      return "(vim.cmd {:args [\"arg\" \"key=value\"] :cmd \"function\" :output true})"
+      return "(vim.cmd {:args [\"arg\" \"key=value\"] :cmd \"function\"})"
     end
     return assert.are.same("(vim.cmd {:args [\"arg\" \"key=value\"] :cmd \"function\" :output true})", _10_())
   end
@@ -147,28 +147,28 @@ describe("Delete user-command macro:", _36_)
 local function _43_()
   local function _44_()
     local function _45_()
-      return "(do (vim.cmd {:args {} :cmd \"function\" :output true}))"
+      return "(do (vim.cmd {:args {} :cmd \"function\"}))"
     end
     return assert.are.same("(do (vim.cmd {:args {} :cmd \"function\" :output true}))", _45_())
   end
   it("do-command with no args", _44_)
   local function _46_()
     local function _47_()
-      return "(do (vim.cmd {:args [\"arg\"] :cmd \"function\" :output true}))"
+      return "(do (vim.cmd {:args [\"arg\"] :cmd \"function\"}))"
     end
     return assert.are.same("(do (vim.cmd {:args [\"arg\"] :cmd \"function\" :output true}))", _47_())
   end
   it("do-command with switch arg", _46_)
   local function _48_()
     local function _49_()
-      return "(do (vim.cmd {:args [\"key=value\"] :cmd \"function\" :output true}))"
+      return "(do (vim.cmd {:args [\"key=value\"] :cmd \"function\"}))"
     end
     return assert.are.same("(do (vim.cmd {:args [\"key=value\"] :cmd \"function\" :output true}))", _49_())
   end
   it("do-command with table arg", _48_)
   local function _50_()
     local function _51_()
-      return "(do (vim.cmd {:args [\"arg\" \"key=value\"] :cmd \"function\" :output true}))"
+      return "(do (vim.cmd {:args [\"arg\" \"key=value\"] :cmd \"function\"}))"
     end
     return assert.are.same("(do (vim.cmd {:args [\"arg\" \"key=value\"] :cmd \"function\" :output true}))", _51_())
   end

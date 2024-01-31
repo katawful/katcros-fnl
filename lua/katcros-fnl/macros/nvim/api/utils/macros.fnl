@@ -58,7 +58,7 @@ Can accept a table for functions that take key=val args"
           (each [key# val# (pairs arg#)]
             (table.insert args# (string.format "%s=%s" key# val#)))
           (table.insert args# (tostring arg#))))
-    `(vim.cmd {:cmd ,function :args ,args# :output true})))
+    `(vim.cmd {:cmd ,function :args ,args#})))
 
 (fn do-viml [function ...]
   "Macro -- run a VimL function
